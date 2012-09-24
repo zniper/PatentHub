@@ -9,7 +9,8 @@ import time
 #logging.basicConfig(filename='/var/log/pse.log', filemode='a')
 log = logging.getLogger(__name__)
 
-GOOGLE_URL = 'http://www.google.com/search?sclient=psy-ab&hl=en&safe=off&site=&tbm=pts&source=hp&q=%s&btnG=Search'
+GOOGLE_URL = 'http://www.google.com/search?sclient=psy-ab&hl=en&safe=off&site=&tbm=pts&source=hp&q=%s&btnG=Search&num=20'
+GOOGLE_URL = 'https://www.google.com/search?num=30&hl=en&safe=off&tbm=pts&q=%(kw)s&oq=%(kw)s'
 G_PATENT_URL = 'www.google.com/patents/%s'
 
 queue_stack = []
@@ -96,7 +97,7 @@ class GooglePatent():
         while retry > 0:
             try:
                 # the the result list first
-                req = requests.get(GOOGLE_URL % self._kw)
+                req = requests.get(GOOGLE_URL % {'kw':self._kw})
                 #page = requests.get('http://www.google.com/search?sclient=psy-ab&hl=en&safe=off&site=&tbm=pts&source=hp&q=mobile&btnG=Search')
                 p0 = pq(req.text)
                 print 'get the first page'
@@ -109,6 +110,7 @@ class GooglePatent():
                 if res:
                     items = res('li.g')
                     for item in items:
+                      try:
                         pqi = pq(item)
                         oPatent = PatentItem()
                         oPatent.title = pqi('h3').text()
@@ -123,6 +125,9 @@ class GooglePatent():
                         #p_details = self.getSinglePatentInfo(oPatent.url)
                         #oPatent.description = p_details['abstract']
                         temp_list.append(oPatent)
+                      except:
+                        # do not include error item
+                        pass
                     break
                 else:
                     print 'Cannot find result content. Retrying... ' + str(retry)
