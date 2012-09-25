@@ -166,10 +166,24 @@ class GooglePatent():
         result_stack[queue] = []
         queue.join()
         queue_stack.remove(queue)
-        result = result_stack[queue]
-        result_stack.pop(queue)
         print 'searching done'
-        return result
+
+        # correct order of resulted items
+        temp_result = result_stack[queue]
+        result_stack.pop(queue)
+        final_result = []
+        for pi in temp_list:
+            for item in temp_result:
+              try:
+                if item.pid.lower() == pi.pid.lower():
+                    final_result.append(item)
+                    temp_result.remove(item)
+                    break
+              except:
+                log.error('Error when sorting an item')
+        print 'sorting done'
+
+        return final_result
 
 
 for ti in range(10):
