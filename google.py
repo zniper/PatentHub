@@ -9,8 +9,8 @@ import time
 #logging.basicConfig(filename='/var/log/pse.log', filemode='a')
 log = logging.getLogger(__name__)
 
-GOOGLE_URL = 'http://www.google.com/search?sclient=psy-ab&hl=en&safe=off&site=&tbm=pts&source=hp&q=%s&btnG=Search&num=20'
-GOOGLE_URL = 'https://www.google.com/search?num=30&hl=en&safe=off&tbm=pts&q=%(kw)s&oq=%(kw)s'
+#GOOGLE_URL = 'http://www.google.com/search?sclient=psy-ab&hl=en&safe=off&site=&tbm=pts&source=hp&q=%s&btnG=Search&num=20'
+GOOGLE_URL = 'http://www.google.com/search?num=%(num)s&hl=en&safe=off&tbm=pts&q=%(kw)s&oq=%(kw)s&start=%(start)s'
 G_PATENT_URL = 'www.google.com/patents/%s'
 
 queue_stack = []
@@ -77,9 +77,18 @@ class ThreadUrl(threading.Thread):
 class GooglePatent():
 
     _kw = ''
+    _num = '10'
+    _start = ''
+    stats = ''
 
-    def __init__(self, keyword=''):
-        self._kw = keyword
+    def __init__(self, **kwargs):
+        self._kw = kwargs.get('keyword', '')
+        self._num = kwargs.get('ipp', '10')
+        self._start = kwargs.get('page', '')
+        try:
+            self._start = int(start-1)*int(self._num)
+        except:
+            pass
 
     def getAllPatentInfo(self, patent_list):
         details = []
@@ -94,10 +103,13 @@ class GooglePatent():
         queue = Queue.Queue()
         temp_list = []
         retry = 03
+        item_number = ''
         while retry > 0:
             try:
                 # the the result list first
-                req = requests.get(GOOGLE_URL % {'kw':self._kw})
+                req = requests.get(GOOGLE_URL % {'kw'    : self._kw,
+                                                 'num'   : self._num,
+                                                 'start' : self._start})
                 #page = requests.get('http://www.google.com/search?sclient=psy-ab&hl=en&safe=off&site=&tbm=pts&source=hp&q=mobile&btnG=Search')
                 p0 = pq(req.text)
                 print 'get the first page'
@@ -107,6 +119,14 @@ class GooglePatent():
                 #f0.close()
                 # end of sample content
                 res = p0('div#ires')
+                # get the general stats, result number
+                statz = p0('div#resultStats')
+                try:
+                    statz.children().remove()
+                except:
+                    pass
+                self.stats = statz.text()
+                # get all the items in page
                 if res:
                     items = res('li.g')
                     for item in items:
